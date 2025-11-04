@@ -20,7 +20,8 @@ import pandas as pd
 import yfinance as yf
 import riskfolio as rp
 from io import BytesIO
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Agg")
 from scipy.optimize import minimize
 import random
 from datetime import datetime
