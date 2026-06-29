@@ -1,0 +1,6 @@
+.vercel
+.venv/
+__pycache__/
+.DS_Store
+PAT.txt
+portfolio_builder.sqlite3

@@ -4,5 +4,3 @@ yfinance
 pandas
 numpy
 scipy
-matplotlib
-riskfolio-lib

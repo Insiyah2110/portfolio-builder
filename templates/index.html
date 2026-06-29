@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio Builder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="control-panel">
+      <div class="brand-block">
+        <h1>Portfolio Builder</h1>
+        <p>Build a guided investment mix. The tool adds stabilizing funds when your risk setting calls for them, then explains the tradeoffs in plain language.</p>
+      </div>
+
+      <section class="input-section">
+        <label>1. Comfort with risk</label>
+        <select id="riskLevel">
+          <option value="low">Lower risk: add more stabilizers</option>
+          <option value="medium">Moderate risk: balanced mix</option>
+          <option value="high">Higher risk: mostly your choices</option>
+        </select>
+      </section>
+
+      <section class="input-section">
+        <label>2. Companies or funds you want</label>
+        <textarea id="tickers" placeholder="AAPL, AMZN, PFE">AAPL, AMZN, PFE</textarea>
+        <div class="hint">Use ticker symbols separated by commas. Example: AAPL is Apple.</div>
+      </section>
+
+      <div class="input-grid">
+        <section class="input-section">
+          <label>3. Years to study</label>
+          <input id="investmentPeriod" type="number" min="1" step="1" value="3" />
+        </section>
+        <section class="input-section">
+          <label>Amount</label>
+          <input id="amount" type="number" step="100" placeholder="10000" />
+        </section>
+      </div>
+
+      <button id="go" class="btn primary" type="button">Build Portfolio</button>
+      <div id="error" class="err" style="display:none;"></div>
+
+      <section class="saved-box">
+        <label>Saved scenarios</label>
+        <input id="saveName" type="text" placeholder="Name this scenario" />
+        <div class="saved-actions">
+          <button id="savePortfolio" class="btn secondary" type="button" disabled>Save</button>
+          <select id="savedPortfolios">
+            <option value="">Saved scenarios</option>
+          </select>
+          <button id="loadPortfolio" class="btn secondary" type="button">Load</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <header class="workspace-header">
+        <div>
+          <h2 id="workspaceTitle">Start with your choices</h2>
+          <p id="workspaceSubtitle">Choose a risk level and enter the holdings you are curious about.</p>
+        </div>
+        <div id="stabilizerSummary" class="stabilizer-summary"></div>
+      </header>
+
+      <div class="empty-state" id="emptyState">
+        <div class="empty-mark">?</div>
+        <h3>No portfolio built yet</h3>
+        <p>Your results will appear here as a compact workspace with separate views for risk, holdings, history, and tradeoffs.</p>
+      </div>
+
+      <div class="results" id="results" style="display:none;">
+        <nav class="view-tabs" aria-label="Result views">
+          <button class="view-tab active" type="button" data-tab="overviewPanel">Overview</button>
+          <button class="view-tab" type="button" data-tab="mixPanel">Suggested Mix</button>
+          <button class="view-tab" type="button" data-tab="historyPanel">History Check</button>
+          <button class="view-tab" type="button" data-tab="tradeoffPanel">Risk Tradeoff</button>
+        </nav>
+
+        <section id="overviewPanel" class="tab-panel active">
+          <div class="kpi">
+            <div class="box">
+              <div>Estimated Yearly Growth <button class="info" type="button" data-metric="return">i</button></div>
+              <div id="expRet" class="metric-value"></div>
+            </div>
+            <div class="box">
+              <div>Typical Yearly Movement <button class="info" type="button" data-metric="volatility">i</button></div>
+              <div id="volatility" class="metric-value"></div>
+            </div>
+            <div class="box">
+              <div>Return for Risk Taken <button class="info" type="button" data-metric="sharpe">i</button></div>
+              <div id="sharpe" class="metric-value"></div>
+              <div id="sharpeText" class="metric-note"></div>
+            </div>
+            <div class="box">
+              <div>Baseline Safe Return</div>
+              <div id="rfNote" class="metric-value"></div>
+            </div>
+          </div>
+
+          <h3>Risk Check</h3>
+          <div id="riskProfile" class="risk-profile"></div>
+        </section>
+
+        <section id="mixPanel" class="tab-panel">
+          <div class="tabbar" id="strategyBar"></div>
+          <div id="strategyInfo" class="hint"></div>
+          <table id="table"></table>
+        </section>
+
+        <section id="historyPanel" class="tab-panel">
+          <p class="hint">Shows how $1 would have grown in the selected period compared with broad market examples.</p>
+          <table id="backtestTable"></table>
+        </section>
+
+        <section id="tradeoffPanel" class="tab-panel">
+          <div class="tradeoff-toolbar">
+            <div>
+              <label>Risk dial</label>
+              <input id="riskDial" type="range" min="0" max="100" step="1" value="75" />
+              <div class="hint">Left means steadier. Right means more growth for the risk taken.</div>
+            </div>
+          </div>
+          <div id="frontierError" class="err" style="display:none;"></div>
+          <canvas id="frontierCanvas" width="900" height="360"></canvas>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
