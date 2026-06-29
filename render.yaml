@@ -8,9 +8,3 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      - key: DATABASE_PATH
-        value: /var/data/portfolio_builder.sqlite3
-    disks:
-      - name: portfolio-builder-data
-        mountPath: /var/data
-        sizeGB: 1
