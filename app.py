@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Flask, jsonify, render_template, request
 
 from portfolio.optimizer import frontier_payload, optimize_payload
+from portfolio.questionnaire import questionnaire_portfolio
 from portfolio.storage import get_portfolio, init_db, list_portfolios, save_portfolio
 
 
@@ -28,12 +29,28 @@ def optimize():
             amount = None
         amount = float(amount) if amount is not None else None
 
+        guidance = None
+        tickers = data.get("tickers") or []
+        risk_level = data.get("risk_level", "medium")
+        investment_period = int(data.get("investment_period", 3))
+        if data.get("mode") == "guided":
+            guidance = questionnaire_portfolio(data.get("questionnaire") or {})
+            tickers = guidance["tickers"]
+            risk_level = guidance["risk_level"]
+            investment_period = guidance["investment_period"]
+
         payload = optimize_payload(
-            tickers=data.get("tickers") or [],
-            risk_level=data.get("risk_level", "medium"),
-            investment_period=int(data.get("investment_period", 3)),
+            tickers=tickers,
+            risk_level=risk_level,
+            investment_period=investment_period,
             amount=amount,
         )
+        if guidance:
+            payload["questionnaire"] = guidance
+            payload["inputs"]["mode"] = "guided"
+            payload["inputs"]["questionnaire_labels"] = guidance["labels"]
+        else:
+            payload["inputs"]["mode"] = "custom"
         return jsonify(payload)
     except ValueError as exc:
         return _json_error(str(exc), 400)

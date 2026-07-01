@@ -1,6 +1,23 @@
-.vercel
-.venv/
-__pycache__/
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local secrets and environment files
+.env
+.env.*
 PAT.txt
+
+# Runtime data
 portfolio_builder.sqlite3
+*.sqlite3
+
+# Deployment/build folders
+.vercel/
+
+# Local reference/generated artifacts
+Materials/
+efficient_frontier.png

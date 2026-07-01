@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     'Min-Variance': 'Steadiest mix',
     'Max Sharpe': 'Best risk/reward balance'
   };
+  let activeMode = 'guided';
 
   function activateTab(tabId) {
     document.querySelectorAll('.view-tab').forEach(btn => {
@@ -25,6 +26,66 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.view-tab').forEach(btn => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+
+  function setMode(mode) {
+    activeMode = mode === 'custom' ? 'custom' : 'guided';
+    $('guidedInputs').style.display = activeMode === 'guided' ? 'block' : 'none';
+    $('customInputs').style.display = activeMode === 'custom' ? 'block' : 'none';
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === activeMode);
+    });
+  }
+
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode));
+  });
+
+  function questionnaireAnswers() {
+    return {
+      goal: $('goal').value,
+      horizon: $('horizon').value,
+      risk_comfort: $('riskComfort').value,
+      loss_tolerance: $('lossTolerance').value,
+      liquidity: $('liquidity').value,
+      emergency_fund: $('emergencyFund').value,
+      contribution: $('contribution').value
+    };
+  }
+
+  function requestPayloadFromForm() {
+    const amount = parseFloat($('amount').value) || null;
+    if (activeMode === 'guided') {
+      return {
+        mode: 'guided',
+        questionnaire: questionnaireAnswers(),
+        amount
+      };
+    }
+    return {
+      mode: 'custom',
+      tickers: $('tickers').value.split(',').map(t => t.trim().toUpperCase()).filter(Boolean),
+      risk_level: $('riskLevel').value,
+      investment_period: parseInt($('investmentPeriod').value, 10) || 3,
+      amount
+    };
+  }
+
+  function setQuestionnaireAnswers(answers) {
+    if (!answers) return;
+    const map = {
+      goal: 'goal',
+      horizon: 'horizon',
+      risk_comfort: 'riskComfort',
+      loss_tolerance: 'lossTolerance',
+      liquidity: 'liquidity',
+      emergency_fund: 'emergencyFund',
+      contribution: 'contribution'
+    };
+    Object.keys(map).forEach(key => {
+      const el = $(map[key]);
+      if (el && answers[key] != null) el.value = answers[key];
+    });
+  }
 
   // ---- strategy explanations (shown under the pill bar) ----
   const STRAT_EXPLAIN = {
@@ -202,6 +263,28 @@ document.addEventListener('DOMContentLoaded', function () {
       `<span>${stabilizers.message}</span>`;
   }
 
+  function renderQuestionnaireSummary(data) {
+    const el = $('questionnaireSummary');
+    if (!el) return;
+    const guidance = data.questionnaire;
+    if (!guidance) {
+      el.classList.remove('active');
+      el.innerHTML = '';
+      return;
+    }
+    const labels = guidance.labels || {};
+    const reasons = (guidance.reasons || []).map(reason => `<li>${reason}</li>`).join('');
+    const tickers = (guidance.tickers || []).join(', ');
+    el.classList.add('active');
+    el.innerHTML =
+      '<strong>Guided profile used for this run</strong>' +
+      `<div class="profile-line">Goal: ${labels.goal || ''} | Horizon: ${labels.horizon || ''} | Risk comfort: ${labels.risk_comfort || ''}</div>` +
+      `<div class="profile-line">Starting basket: ${tickers}. Risk setting: ${guidance.risk_level}.</div>` +
+      `<div class="hint">${guidance.explanation || ''}</div>` +
+      (reasons ? `<ul>${reasons}</ul>` : '') +
+      `<div class="hint">${guidance.note || ''}</div>`;
+  }
+
   function renderOptimization(data) {
     currentPayload = data;
     $('emptyState').style.display = 'none';
@@ -232,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
     renderRiskProfile(data.risk_profile);
     renderBacktest(data.backtest);
     renderStabilizerSummary(data);
+    renderQuestionnaireSummary(data);
 
     const interpretation = data.metrics && data.metrics.sharpe_interpretation;
     $('sharpeText').textContent = interpretation ? interpretation.label : '';
@@ -244,6 +328,10 @@ document.addEventListener('DOMContentLoaded', function () {
       $('riskLevel').value = data.inputs.risk_level || 'medium';
       $('investmentPeriod').value = data.inputs.investment_period || 3;
       $('amount').value = data.inputs.amount || '';
+      setMode(data.inputs.mode === 'guided' ? 'guided' : 'custom');
+    }
+    if (data.questionnaire) {
+      setQuestionnaireAnswers(data.questionnaire.answers);
     }
 
     $('savePortfolio').disabled = false;
@@ -276,15 +364,12 @@ document.addEventListener('DOMContentLoaded', function () {
     goBtn.disabled = true;
 
     try {
-      const tickers = $('tickers').value.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
-      const risk_level = $('riskLevel').value;
-      const amount = parseFloat($('amount').value) || null;
-      const investment_period = parseInt($('investmentPeriod').value, 10) || 3;
+      const payload = requestPayloadFromForm();
 
       const res = await fetch('/optimize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tickers, risk_level, investment_period, amount })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error((await res.text()) || 'Request failed');
 
@@ -501,9 +586,12 @@ document.addEventListener('DOMContentLoaded', function () {
   async function computeFrontier(){
     $('frontierError').style.display = 'none';
     try {
-      const tickers = $('tickers').value.split(',').map(t=>t.trim().toUpperCase()).filter(Boolean);
-      const risk_level = $('riskLevel').value;
-      const investment_period = parseInt($('investmentPeriod').value, 10) || 3;
+      const inputs = currentPayload && currentPayload.inputs ? currentPayload.inputs : null;
+      const tickers = inputs
+        ? (inputs.requested_tickers || inputs.tickers || [])
+        : $('tickers').value.split(',').map(t=>t.trim().toUpperCase()).filter(Boolean);
+      const risk_level = inputs ? inputs.risk_level : $('riskLevel').value;
+      const investment_period = inputs ? inputs.investment_period : (parseInt($('investmentPeriod').value, 10) || 3);
 
       const res = await fetch('/frontier', {
         method: 'POST',

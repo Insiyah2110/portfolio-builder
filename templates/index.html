@@ -11,33 +11,121 @@
     <aside class="control-panel">
       <div class="brand-block">
         <h1>Portfolio Builder</h1>
-        <p>Build a guided investment mix. The tool adds stabilizing funds when your risk setting calls for them, then explains the tradeoffs in plain language.</p>
+        <p>Build a guided investment mix from a short profile or your own tickers. The tool explains the tradeoffs in plain language.</p>
       </div>
 
-      <section class="input-section">
-        <label>1. Comfort with risk</label>
-        <select id="riskLevel">
-          <option value="low">Lower risk: add more stabilizers</option>
-          <option value="medium">Moderate risk: balanced mix</option>
-          <option value="high">Higher risk: mostly your choices</option>
-        </select>
-      </section>
+      <div class="mode-toggle" aria-label="Builder mode">
+        <button id="guidedMode" class="mode-btn active" type="button" data-mode="guided">Guided</button>
+        <button id="customMode" class="mode-btn" type="button" data-mode="custom">Custom</button>
+      </div>
 
-      <section class="input-section">
-        <label>2. Companies or funds you want</label>
-        <textarea id="tickers" placeholder="AAPL, AMZN, PFE">AAPL, AMZN, PFE</textarea>
-        <div class="hint">Use ticker symbols separated by commas. Example: AAPL is Apple.</div>
-      </section>
+      <div id="guidedInputs">
+        <div class="notice">
+          These questions use broad ranges only. They help choose a sample ETF basket and risk setting; they are not financial advice.
+        </div>
 
-      <div class="input-grid">
+        <section class="input-section">
+          <label>1. Main goal</label>
+          <select id="goal">
+            <option value="wealth">Long-term wealth growth</option>
+            <option value="retirement">Retirement</option>
+            <option value="education">Education</option>
+            <option value="major_purchase">Major purchase</option>
+            <option value="emergency">Emergency or cash reserve</option>
+          </select>
+          <div class="hint">The goal changes how much short-term risk is reasonable.</div>
+        </section>
+
+        <section class="input-section">
+          <label>2. When might you need the money?</label>
+          <select id="horizon">
+            <option value="10_plus">10+ years</option>
+            <option value="6_10">6-10 years</option>
+            <option value="3_5">3-5 years</option>
+            <option value="0_2">0-2 years</option>
+          </select>
+          <div class="hint">Longer horizons can usually handle more movement.</div>
+        </section>
+
+        <div class="input-grid">
+          <section class="input-section">
+            <label>3. Risk comfort</label>
+            <select id="riskComfort">
+              <option value="medium">Moderate</option>
+              <option value="low">Lower</option>
+              <option value="high">Higher</option>
+            </select>
+          </section>
+          <section class="input-section">
+            <label>Loss tolerance</label>
+            <select id="lossTolerance">
+              <option value="10">Around 10%</option>
+              <option value="5">Around 5%</option>
+              <option value="20">Around 20%</option>
+              <option value="30_plus">More than 30%</option>
+              <option value="none">Avoid losses where possible</option>
+            </select>
+          </section>
+        </div>
+
+        <section class="input-section">
+          <label>4. Access to cash</label>
+          <select id="liquidity">
+            <option value="some">I may need part of it</option>
+            <option value="rare">I do not expect to touch it</option>
+            <option value="soon">I may need this money soon</option>
+          </select>
+          <div class="hint">Money needed soon should be less exposed to stocks.</div>
+        </section>
+
+        <div class="input-grid">
+          <section class="input-section">
+            <label>5. Emergency savings</label>
+            <select id="emergencyFund">
+              <option value="partial">Some emergency savings</option>
+              <option value="funded">Already covered</option>
+              <option value="none">Not yet</option>
+            </select>
+          </section>
+          <section class="input-section">
+            <label>Contributions</label>
+            <select id="contribution">
+              <option value="small">Small or occasional</option>
+              <option value="steady">Steady monthly</option>
+              <option value="none">No planned additions</option>
+            </select>
+          </section>
+        </div>
+      </div>
+
+      <div id="customInputs" style="display:none;">
+        <section class="input-section">
+          <label>1. Comfort with risk</label>
+          <select id="riskLevel">
+            <option value="low">Lower risk: add more stabilizers</option>
+            <option value="medium">Moderate risk: balanced mix</option>
+            <option value="high">Higher risk: mostly your choices</option>
+          </select>
+          <div class="hint">This controls how much stabilizing bond and Treasury exposure the tool adds.</div>
+        </section>
+
+        <section class="input-section">
+          <label>2. Companies or funds you want</label>
+          <textarea id="tickers" placeholder="AAPL, AMZN, PFE">AAPL, AMZN, PFE</textarea>
+          <div class="hint">Use ticker symbols separated by commas. Example: AAPL is Apple.</div>
+        </section>
+
         <section class="input-section">
           <label>3. Years to study</label>
           <input id="investmentPeriod" type="number" min="1" step="1" value="3" />
+          <div class="hint">The app uses completed calendar years for historical data.</div>
         </section>
-        <section class="input-section">
-          <label>Amount</label>
-          <input id="amount" type="number" step="100" placeholder="10000" />
-        </section>
+      </div>
+
+      <div class="input-section">
+        <label>Amount</label>
+        <input id="amount" type="number" step="100" placeholder="10000" />
+        <div class="hint">Optional. Used only to show dollar allocations.</div>
       </div>
 
       <button id="go" class="btn primary" type="button">Build Portfolio</button>
@@ -60,7 +148,7 @@
       <header class="workspace-header">
         <div>
           <h2 id="workspaceTitle">Start with your choices</h2>
-          <p id="workspaceSubtitle">Choose a risk level and enter the holdings you are curious about.</p>
+          <p id="workspaceSubtitle">Answer the guided profile or enter custom holdings to build a portfolio.</p>
         </div>
         <div id="stabilizerSummary" class="stabilizer-summary"></div>
       </header>
@@ -101,6 +189,7 @@
           </div>
 
           <h3>Risk Check</h3>
+          <div id="questionnaireSummary" class="questionnaire-summary"></div>
           <div id="riskProfile" class="risk-profile"></div>
         </section>
 
